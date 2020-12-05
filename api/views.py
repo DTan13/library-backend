@@ -24,5 +24,8 @@ def books(request):
         return HttpResponse(result)
 
     if request.method == 'GET':
-        data = Book.GetBooks()
+        page = request.GET.get('page')
+        limit = request.GET.get('limit')
+
+        data = Book.GetBooks(int(page), int(limit))
         return JsonResponse(data, safe=False)

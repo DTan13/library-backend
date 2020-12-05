@@ -28,9 +28,16 @@ class Book(models.Model):
     6] Publication
     7] ISBN
     8] Genre
-    9] Tags Array
-    10] Image
+    9] Image
     '''
+    title = models.CharField(("Book Title"), max_length=64)
+    desc = models.CharField(("Book Description"), max_length=128)
+    author = models.CharField(("Book Author"), max_length=64)
+    pages = models.IntegerField(("Book Pages"))
+    price = models.FloatField(("Book Price"))
+    pub = models.CharField(("Book Publication"), max_length=64)
+    isbn = models.CharField(("ISBN"), max_length=16)
+    genre = models.CharField(("Book Genre"), max_length=32)
 
     def __str__(self):
         return self.title
@@ -44,10 +51,17 @@ class Book(models.Model):
         return result.acknowledged
 
     @staticmethod
-    def GetBooks():
+    def GetBooks(page=1, limit=20):
         """
         Get all the books from database
         """
-        result = books.find({})
+
+        skips = int(limit * (int(page) - 1))
+
+        result = books.find({}).skip(skips).limit(limit)
         clr_json = dumps(result, json_options=CANONICAL_JSON_OPTIONS)
-        return json.loads(clr_json)
+
+        if clr_json == '[]':
+            return json.loads('[{"error":"No results found for your search!"}]')
+        else:
+            return json.loads(clr_json)
