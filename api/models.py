@@ -31,6 +31,14 @@ class Book(models.Model):
     9] Tags Array
     10] Image
     '''
+    title = models.CharField(("Book Title"), max_length=64)
+    desc = models.CharField(("Book Description"), max_length=128)
+    author = models.CharField(("Book Author"), max_length=64)
+    pages = models.IntegerField(("Book Pages"))
+    price = models.FloatField(("Book Price"))
+    pub = models.CharField(("Book Publication"), max_length=64)
+    isbn = models.CharField(("ISBN"), max_length=16)
+    genre = models.CharField(("Book Genre"), max_length=32)
 
     def __str__(self):
         return self.title
