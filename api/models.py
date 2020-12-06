@@ -83,3 +83,10 @@ class User(models.Model):
     password = models.CharField(("User Passwod"), max_length=100)
     authToken = models.CharField(("Auth Token"), max_length=50)
 
+    @staticmethod
+    def SaveUser(user):
+        password = user['password'].encode()
+        salt = bcrypt.gensalt()
+        user['password'] = bcrypt.hashpw(password, salt)
+        result = users.insert_one(user)
+        return result
