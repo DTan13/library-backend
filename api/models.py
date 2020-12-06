@@ -3,6 +3,7 @@ from pymongo import errors
 import pymongo
 import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
+import bcrypt
 
 try:
     # Make sure MongoDB is running on port 27017
