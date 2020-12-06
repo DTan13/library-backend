@@ -5,7 +5,6 @@ import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
 import bcrypt
 import jwt
-from bson import json_util
 
 try:
     # Make sure MongoDB is running on port 27017
@@ -82,7 +81,7 @@ class User(models.Model):
     mail = models.CharField(("User Email"), max_length=64)
     rollNo = models.CharField(("Roll Number"), max_length=16)
     mobile = models.CharField(("Mobile Number"), max_length=16)
-    password = models.CharField(("User Passwod"), max_length=100)
+    password = models.CharField(("User Password"), max_length=100)
     authToken = models.CharField(("Auth Token"), max_length=50)
 
     @staticmethod
@@ -93,17 +92,24 @@ class User(models.Model):
         user['password'] = bcrypt.hashpw(password, salt)
 
         result = users.insert_one(user)
-        print(result.inserted_id)
 
         key_file = open('jwtRS256.key', "r")
         key = key_file.read()
-        print(key)
+
+        id_json = json.loads(dumps(result.inserted_id))
 
         user['authToken'] = jwt.encode(
-            {"some": "payload"}, key, algorithm='RS256')
+            id_json, key, algorithm='RS256')
 
         updatedResult = users.replace_one({'_id': result.inserted_id},  user)
-        return updatedResult.acknowledged
+
+        if updatedResult.acknowledged == True:
+            user['_id'] = str(user['_id'])
+            user['authToken'] = str(user['authToken'])
+            del user['password']
+            return user
+        else:
+            return {'code': "500", 'error': "Internal Server Error"}
 
     @staticmethod
     def CheckUser(user):
