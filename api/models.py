@@ -4,6 +4,8 @@ import pymongo
 import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
 import bcrypt
+import jwt
+from bson import json_util
 
 try:
     # Make sure MongoDB is running on port 27017
@@ -86,10 +88,22 @@ class User(models.Model):
     @staticmethod
     def SaveUser(user):
         password = user['password'].encode()
+
         salt = bcrypt.gensalt()
         user['password'] = bcrypt.hashpw(password, salt)
+
         result = users.insert_one(user)
-        return result
+        print(result.inserted_id)
+
+        key_file = open('jwtRS256.key', "r")
+        key = key_file.read()
+        print(key)
+
+        user['authToken'] = jwt.encode(
+            {"some": "payload"}, key, algorithm='RS256')
+
+        updatedResult = users.replace_one({'_id': result.inserted_id},  user)
+        return updatedResult.acknowledged
 
     @staticmethod
     def CheckUser(user):
