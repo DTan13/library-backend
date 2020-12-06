@@ -14,6 +14,7 @@ except errors.ConnectionFailure as ConnectionError:
 backendDB = client['te-project-backend-db']
 
 books = backendDB['books']
+users = backendDB['users']
 
 
 class Book(models.Model):
@@ -51,9 +52,10 @@ class Book(models.Model):
         return result.acknowledged
 
     @staticmethod
-    def GetBooks(page=1, limit=20):
+    def GetBooks(page, limit):
         """
-        Get all the books from database
+        Get books from database with pagination
+        If nothing is provided get first 20 books
         """
 
         skips = int(limit * (int(page) - 1))
@@ -65,3 +67,18 @@ class Book(models.Model):
             return json.loads('[{"error":"No results found for your search!"}]')
         else:
             return json.loads(clr_json)
+
+
+class User(models.Model):
+    """
+    This is model for User
+
+    """
+
+    name = models.CharField(("User Name"), max_length=64)
+    mail = models.CharField(("User Email"), max_length=64)
+    rollNo = models.CharField(("Roll Number"), max_length=16)
+    mobile = models.CharField(("Mobile Number"), max_length=16)
+    password = models.CharField(("User Passwod"), max_length=100)
+    authToken = models.CharField(("Auth Token"), max_length=50)
+
