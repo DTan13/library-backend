@@ -90,3 +90,10 @@ class User(models.Model):
         user['password'] = bcrypt.hashpw(password, salt)
         result = users.insert_one(user)
         return result
+
+    @staticmethod
+    def CheckUser(user):
+        if bcrypt.checkpw(user['password'].encode(), users.find_one({"mail": user['mail']})['password']):
+            return "LogIn Successfull"
+        else:
+            return "LogIn Failed"
