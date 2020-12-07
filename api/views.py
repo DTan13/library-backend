@@ -26,4 +26,10 @@ def books(request):
             'page') != None else 20
 
         data = Book.GetBooks(int(page), int(limit))
+
+        try:
+            if data['code']:
+                return JsonResponse(data, status=data['code'], safe=False)
+        except (KeyError, TypeError) as error:
+            print(error)
         return JsonResponse(data, safe=False)
