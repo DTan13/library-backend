@@ -68,7 +68,7 @@ class Book(models.Model):
         clr_json = dumps(result, json_options=CANONICAL_JSON_OPTIONS)
 
         if clr_json == '[]':
-            return json.loads('[{"error":"No results found for your search!"}]')
+            return {'code': 404, 'error': "No results found for your search!"}
         else:
             return json.loads(clr_json)
 
@@ -92,7 +92,7 @@ class User(models.Model):
         found_user = users.find_one({'mail': user['mail']})
 
         if found_user != None:
-            return {'code': 404, 'error': 'Email is already taken!'}
+            return {'code': 409, 'error': 'Email is already taken!'}
         else:
             password = user['password'].encode()
 
@@ -116,6 +116,12 @@ class User(models.Model):
                 user['_id'] = str(user['_id'])
                 user['authToken'] = str(user['authToken'])
                 del user['password']
+
+                try:
+                    if user['book']:
+                        find_user['book'] = str(user['book'])
+                except KeyError:
+                    print(KeyError)
                 return user
             else:
                 return {'code': 500, 'error': "Internal Server Error"}
@@ -143,12 +149,19 @@ class User(models.Model):
             if updatedResult.acknowledged == True:
                 find_user['_id'] = str(find_user['_id'])
                 find_user['authToken'] = str(find_user['authToken'])
+
+                try:
+                    if find_user['book']:
+                        find_user['book'] = str(find_user['book'])
+                except KeyError:
+                    print(KeyError)
+
                 del find_user['password']
                 return find_user
             else:
                 return {'code': 500, 'error': 'Internal Server Error'}
         else:
-            return {'code': 404, 'error': "User not found"}
+            return {'code': 401, 'error': "Incorrect Password"}
 
     @staticmethod
     def GetMe(user_data):
@@ -173,6 +186,13 @@ class User(models.Model):
         if(decoded_data['$oid'] == user_data['_id']):
             find_user['_id'] = str(find_user['_id'])
             find_user['authToken'] = str(find_user['authToken'])
+
+            try:
+                if find_user['book']:
+                    find_user['book'] = str(find_user['book'])
+            except KeyError:
+                print(KeyError)
+
             del find_user['password']
             return find_user
         else:
@@ -190,6 +210,7 @@ class User(models.Model):
 
         key_file = open('jwtRS256.key.pub', "r")
         key = key_file.read()
+
         try:
             decoded_data = jwt.decode(
                 find_user['authToken'], key, algorithms='RS256')
@@ -198,10 +219,114 @@ class User(models.Model):
 
         if(decoded_data['$oid'] == user_data['_id']):
             del find_user['authToken']
-            users.replace_one(
+            result = users.replace_one(
                 {'_id': find_user['_id']},  find_user)
-            find_user['_id'] = str(find_user['_id'])
-            del find_user['password']
-            return {'code': 201, 'error': "User logged Out", 'user': find_user}
+            if result.acknowledged == True:
+                return {'code': 205, 'error': "User logged Out"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
         else:
             return {'code': 404, 'error': "Log In first"}
+
+
+class Admin(models.Model):
+    pass
+
+    @staticmethod
+    def BorrowBook(user, book):
+        try:
+            find_user = users.find_one({'_id': ObjectId(user['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        try:
+            if find_user['book']:
+                return {'code': 403, 'error': "You have taken a book!"}
+        except KeyError:
+            print(KeyError)
+
+        try:
+            requested_book = books.find_one({'_id': ObjectId(book['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        if requested_book == None:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        try:
+            if requested_book['user']:
+                return {'code': 403, 'error': "The book is already taken!"}
+        except KeyError:
+            print(KeyError)
+
+        if (decoded_data['$oid'] == user['_id']):
+            find_user['book'] = requested_book['_id']
+            requested_book['user'] = find_user['_id']
+            result_user = users.replace_one(
+                {'_id': find_user['_id']}, find_user
+            )
+            result_book = books.replace_one(
+                {'_id': requested_book['_id']}, requested_book
+            )
+            if result_user.acknowledged == True and result_book.acknowledged == True:
+                return {'code': 200, 'error': "You get the book"}
+
+    @staticmethod
+    def SubmitBook(user, book):
+        try:
+            requested_book = books.find_one({'_id': ObjectId(book['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        if requested_book == None:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        try:
+            find_user = users.find_one({'_id': ObjectId(user['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if (decoded_data['$oid'] == user['_id']):
+            try:
+                if find_user['book']:
+                    del find_user['book']
+            except KeyError:
+                print(KeyError)
+            try:
+                if requested_book['user']:
+                    del requested_book['user']
+            except KeyError:
+                print(KeyError)
+
+            result_user = users.replace_one(
+                {'_id': find_user['_id']}, find_user
+            )
+            result_book = books.replace_one(
+                {'_id': requested_book['_id']}, requested_book
+            )
+            if result_user.acknowledged == True and result_book.acknowledged == True:
+                return {'code': 200, 'error': "Book Submitted"}
