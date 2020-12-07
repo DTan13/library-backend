@@ -8,5 +8,6 @@ urlpatterns = [
     path("me/", auth.me),
     path("signup/", auth.signup),
     path("login/", auth.login),
+    path("logout/", auth.logout),
     path("books/", views.books),
 ]
