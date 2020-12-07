@@ -5,7 +5,8 @@ import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
 import bcrypt
 import jwt
-from bson import json_util
+import bson
+from bson.objectid import ObjectId
 
 try:
     # Make sure MongoDB is running on port 27017
@@ -82,32 +83,125 @@ class User(models.Model):
     mail = models.CharField(("User Email"), max_length=64)
     rollNo = models.CharField(("Roll Number"), max_length=16)
     mobile = models.CharField(("Mobile Number"), max_length=16)
-    password = models.CharField(("User Passwod"), max_length=100)
+    password = models.CharField(("User Password"), max_length=100)
     authToken = models.CharField(("Auth Token"), max_length=50)
 
     @staticmethod
     def SaveUser(user):
-        password = user['password'].encode()
 
-        salt = bcrypt.gensalt()
-        user['password'] = bcrypt.hashpw(password, salt)
+        found_user = users.find_one({'mail': user['mail']})
 
-        result = users.insert_one(user)
-        print(result.inserted_id)
+        if found_user != None:
+            return {'code': 404, 'error': 'Email is already taken!'}
+        else:
+            password = user['password'].encode()
 
-        key_file = open('jwtRS256.key', "r")
-        key = key_file.read()
-        print(key)
+            salt = bcrypt.gensalt()
+            user['password'] = bcrypt.hashpw(password, salt)
 
-        user['authToken'] = jwt.encode(
-            {"some": "payload"}, key, algorithm='RS256')
+            result = users.insert_one(user)
 
-        updatedResult = users.replace_one({'_id': result.inserted_id},  user)
-        return updatedResult.acknowledged
+            key_file = open('jwtRS256.key', "r")
+            key = key_file.read()
+
+            id_json = json.loads(dumps(result.inserted_id))
+
+            user['authToken'] = jwt.encode(
+                id_json, key, algorithm='RS256')
+
+            updatedResult = users.replace_one(
+                {'_id': result.inserted_id},  user)
+
+            if updatedResult.acknowledged == True:
+                user['_id'] = str(user['_id'])
+                user['authToken'] = str(user['authToken'])
+                del user['password']
+                return user
+            else:
+                return {'code': 500, 'error': "Internal Server Error"}
 
     @staticmethod
     def CheckUser(user):
-        if bcrypt.checkpw(user['password'].encode(), users.find_one({"mail": user['mail']})['password']):
-            return "LogIn Successfull"
+        find_user = users.find_one({"mail": user['mail']})
+
+        if find_user == None:
+            return {'code': 404, 'error': "Sign Up first"}
+
+        if bcrypt.checkpw(user['password'].encode(), find_user['password']):
+
+            key_file = open('jwtRS256.key', "r")
+            key = key_file.read()
+
+            id_json = json.loads(dumps(find_user['_id']))
+
+            find_user['authToken'] = jwt.encode(
+                id_json, key, algorithm='RS256')
+
+            updatedResult = users.replace_one(
+                {'_id': find_user['_id']},  find_user)
+
+            if updatedResult.acknowledged == True:
+                find_user['_id'] = str(find_user['_id'])
+                find_user['authToken'] = str(find_user['authToken'])
+                del find_user['password']
+                return find_user
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
         else:
-            return "LogIn Failed"
+            return {'code': 404, 'error': "User not found"}
+
+    @staticmethod
+    def GetMe(user_data):
+
+        try:
+            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == user_data['_id']):
+            find_user['_id'] = str(find_user['_id'])
+            find_user['authToken'] = str(find_user['authToken'])
+            del find_user['password']
+            return find_user
+        else:
+            return {'code': 404, 'error': "Sign Up First"}
+
+    @staticmethod
+    def RemoveAuthToken(user_data):
+        try:
+            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In first"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == user_data['_id']):
+            del find_user['authToken']
+            users.replace_one(
+                {'_id': find_user['_id']},  find_user)
+            find_user['_id'] = str(find_user['_id'])
+            del find_user['password']
+            return {'code': 201, 'error': "User logged Out", 'user': find_user}
+        else:
+            return {'code': 404, 'error': "Log In first"}

@@ -1,6 +1,6 @@
 import json
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from api.models import User
 
 
@@ -16,7 +16,25 @@ def login(request):
     except json.decoder.JSONDecodeError as DecodeError:
         print(DecodeError)
 
-    return HttpResponse(User.CheckUser(user_body_data))
+    reponse = User.CheckUser(user_body_data)
+    return JsonResponse(reponse, safe=False)
+
+
+@csrf_exempt
+def logout(request):
+    """
+    This method is for user to logout
+    """
+    user_body_data = 0
+    try:
+        body_unicode = request.body.decode('utf-8')
+        user_body_data = json.loads(body_unicode)
+    except json.decoder.JSONDecodeError as DecodeError:
+        print(DecodeError)
+
+    response = User.RemoveAuthToken(user_body_data)
+    return JsonResponse(response, safe=False)
+
 
 @csrf_exempt
 def signup(request):
@@ -30,4 +48,17 @@ def signup(request):
     except json.decoder.JSONDecodeError as DecodeError:
         print(DecodeError)
 
-    return HttpResponse(User.SaveUser(user_body_data))
+    response = User.SaveUser(user_body_data)
+    return JsonResponse(response, safe=False)
+
+
+def me(request):
+    user_body_data = 0
+    try:
+        body_unicode = request.body.decode('utf-8')
+        user_body_data = json.loads(body_unicode)
+    except json.decoder.JSONDecodeError as DecodeError:
+        print(DecodeError)
+
+    response = User.GetMe(user_body_data)
+    return JsonResponse(response, safe=False)
