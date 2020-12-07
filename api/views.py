@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 
 from api.models import Book
+from api.utils import parseBody
 
 
 def index(request):
@@ -12,12 +13,7 @@ def index(request):
 
 @csrf_exempt
 def books(request):
-    body_data = 0
-    try:
-        body_unicode = request.body.decode('utf-8')
-        body_data = json.loads(body_unicode)
-    except json.decoder.JSONDecodeError as DecodeError:
-        print(DecodeError)
+    body_data = parseBody(request)
 
     if request.method == 'POST':
         result = Book.SaveBook(body_data)
