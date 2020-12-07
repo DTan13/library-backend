@@ -90,8 +90,9 @@ class User(models.Model):
     def SaveUser(user):
 
         found_user = users.find_one({'mail': user['mail']})
+
         if found_user != None:
-            return {'code': '404', 'error': 'User is already there'}
+            return {'code': 404, 'error': 'Email is already taken!'}
         else:
             password = user['password'].encode()
 
@@ -117,7 +118,7 @@ class User(models.Model):
                 del user['password']
                 return user
             else:
-                return {'code': "500", 'error': "Internal Server Error"}
+                return {'code': 500, 'error': "Internal Server Error"}
 
     @staticmethod
     def CheckUser(user):
@@ -155,10 +156,10 @@ class User(models.Model):
         try:
             find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
         except bson.errors.InvalidId:
-            return {'code': 404, 'error': "Id is incorrect"}
+            return {'code': 404, 'error': "Log In First"}
 
         if find_user == None:
-            return {'code': 404, 'error': "User Not found"}
+            return {'code': 404, 'error': "Sign Up First"}
 
         key_file = open('jwtRS256.key.pub', "r")
         key = key_file.read()
@@ -175,14 +176,14 @@ class User(models.Model):
             del find_user['password']
             return find_user
         else:
-            return {'code': 404, 'error': "User not found"}
+            return {'code': 404, 'error': "Sign Up First"}
 
     @staticmethod
     def RemoveAuthToken(user_data):
         try:
             find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
         except bson.errors.InvalidId:
-            return {'code': 404, 'error': "Id is incorrect"}
+            return {'code': 404, 'error': "Log In first"}
 
         if find_user == None:
             return {'code': 404, 'error': "Log In first"}
@@ -203,4 +204,4 @@ class User(models.Model):
             del find_user['password']
             return {'code': 201, 'error': "User logged Out", 'user': find_user}
         else:
-            return {'code': 404, 'error': "User not found"}
+            return {'code': 404, 'error': "Log In first"}
