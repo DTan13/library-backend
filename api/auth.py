@@ -16,8 +16,10 @@ def login(request):
     except json.decoder.JSONDecodeError as DecodeError:
         print(DecodeError)
 
-    reponse = User.CheckUser(user_body_data)
-    return JsonResponse(reponse, safe=False)
+    response = User.CheckUser(user_body_data)
+    if response['code']:
+        return JsonResponse(response, status=response['code'], safe=False)
+    return JsonResponse(response, safe=False)
 
 
 @csrf_exempt
@@ -33,6 +35,8 @@ def logout(request):
         print(DecodeError)
 
     response = User.RemoveAuthToken(user_body_data)
+    if response['code']:
+        return JsonResponse(response, status=response['code'], safe=False)
     return JsonResponse(response, safe=False)
 
 
@@ -49,6 +53,8 @@ def signup(request):
         print(DecodeError)
 
     response = User.SaveUser(user_body_data)
+    if response['code']:
+        return JsonResponse(response, status=response['code'], safe=False)
     return JsonResponse(response, safe=False)
 
 
@@ -61,4 +67,6 @@ def me(request):
         print(DecodeError)
 
     response = User.GetMe(user_body_data)
+    if response['code']:
+        return JsonResponse(response, status=response['code'], safe=False)
     return JsonResponse(response, safe=False)
