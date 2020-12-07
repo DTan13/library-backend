@@ -113,6 +113,30 @@ class User(models.Model):
 
     @staticmethod
     def CheckUser(user):
+        find_user = users.find_one({"mail": user['mail']})
+        if bcrypt.checkpw(user['password'].encode(), find_user['password']):
+
+            key_file = open('jwtRS256.key', "r")
+            key = key_file.read()
+
+            id_json = json.loads(dumps(find_user['_id']))
+
+            find_user['authToken'] = jwt.encode(
+                id_json, key, algorithm='RS256')
+
+            updatedResult = users.replace_one(
+                {'_id': find_user['_id']},  find_user)
+
+            if updatedResult.acknowledged == True:
+                find_user['_id'] = str(find_user['_id'])
+                find_user['authToken'] = str(find_user['authToken'])
+                del find_user['password']
+                return find_user
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 404, 'error': "User not found"}
+
     @staticmethod
     def GetMe(user_data):
 
