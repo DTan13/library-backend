@@ -68,7 +68,7 @@ class Book(models.Model):
         clr_json = dumps(result, json_options=CANONICAL_JSON_OPTIONS)
 
         if clr_json == '[]':
-            return json.loads('[{"error":"No results found for your search!"}]')
+            return {'code': 404, 'error': "No results found for your search!"}
         else:
             return json.loads(clr_json)
 
