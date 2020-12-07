@@ -122,6 +122,10 @@ class User(models.Model):
     @staticmethod
     def CheckUser(user):
         find_user = users.find_one({"mail": user['mail']})
+
+        if find_user == None:
+            return {'code': 404, 'error': "Sign Up first"}
+
         if bcrypt.checkpw(user['password'].encode(), find_user['password']):
 
             key_file = open('jwtRS256.key', "r")
