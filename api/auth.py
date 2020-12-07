@@ -16,7 +16,8 @@ def login(request):
     except json.decoder.JSONDecodeError as DecodeError:
         print(DecodeError)
 
-    return HttpResponse(User.CheckUser(user_body_data))
+    reponse = User.CheckUser(user_body_data)
+    return JsonResponse(reponse, safe=False)
 
 @csrf_exempt
 def signup(request):
