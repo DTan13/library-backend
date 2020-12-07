@@ -113,7 +113,58 @@ class User(models.Model):
 
     @staticmethod
     def CheckUser(user):
-        if bcrypt.checkpw(user['password'].encode(), users.find_one({"mail": user['mail']})['password']):
-            return "LogIn Successfull"
+    @staticmethod
+    def GetMe(user_data):
+
+        try:
+            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Id is incorrect"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "User Not found"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == user_data['_id']):
+            find_user['_id'] = str(find_user['_id'])
+            find_user['authToken'] = str(find_user['authToken'])
+            del find_user['password']
+            return find_user
         else:
-            return "LogIn Failed"
+            return {'code': 404, 'error': "User not found"}
+
+    @staticmethod
+    def RemoveAuthToken(user_data):
+        try:
+            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Id is incorrect"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == user_data['_id']):
+            del find_user['authToken']
+            users.replace_one(
+                {'_id': find_user['_id']},  find_user)
+            find_user['_id'] = str(find_user['_id'])
+            del find_user['password']
+            return {'code': 201, 'error': "User logged Out", 'user': find_user}
+        else:
+            return {'code': 404, 'error': "User not found"}
