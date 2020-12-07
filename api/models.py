@@ -116,7 +116,7 @@ class User(models.Model):
                 user['_id'] = str(user['_id'])
                 user['authToken'] = str(user['authToken'])
                 del user['password']
-                
+
                 try:
                     if user['book']:
                         find_user['book'] = str(user['book'])
@@ -283,3 +283,43 @@ class Admin(models.Model):
             if result_user.acknowledged == True and result_book.acknowledged == True:
                 return {'code': 200, 'error': "You get the book"}
 
+    @staticmethod
+    def SubmitBook(user, book):
+        try:
+            requested_book = books.find_one({'_id': ObjectId(book['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        if requested_book == None:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        try:
+            find_user = users.find_one({'_id': ObjectId(user['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if (decoded_data['$oid'] == user['_id']):
+            del find_user['book']
+            del requested_book['user']
+            # find_user['book'] = requested_book['_id']
+            # requested_book['user'] = find_user['_id']
+            result_user = users.replace_one(
+                {'_id': find_user['_id']}, find_user
+            )
+            result_book = books.replace_one(
+                {'_id': requested_book['_id']}, requested_book
+            )
+            if result_user.acknowledged == True and result_book.acknowledged == True:
+                return {'code': 200, 'error': "Book Submitted"}
