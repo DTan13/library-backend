@@ -31,4 +31,5 @@ def signup(request):
     except json.decoder.JSONDecodeError as DecodeError:
         print(DecodeError)
 
-    return HttpResponse(User.SaveUser(user_body_data))
+    response = User.SaveUser(user_body_data)
+    return JsonResponse(response, safe=False)
