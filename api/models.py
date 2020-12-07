@@ -5,6 +5,8 @@ import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
 import bcrypt
 import jwt
+import bson
+from bson.objectid import ObjectId
 
 try:
     # Make sure MongoDB is running on port 27017
@@ -86,30 +88,36 @@ class User(models.Model):
 
     @staticmethod
     def SaveUser(user):
-        password = user['password'].encode()
 
-        salt = bcrypt.gensalt()
-        user['password'] = bcrypt.hashpw(password, salt)
-
-        result = users.insert_one(user)
-
-        key_file = open('jwtRS256.key', "r")
-        key = key_file.read()
-
-        id_json = json.loads(dumps(result.inserted_id))
-
-        user['authToken'] = jwt.encode(
-            id_json, key, algorithm='RS256')
-
-        updatedResult = users.replace_one({'_id': result.inserted_id},  user)
-
-        if updatedResult.acknowledged == True:
-            user['_id'] = str(user['_id'])
-            user['authToken'] = str(user['authToken'])
-            del user['password']
-            return user
+        found_user = users.find_one({'mail': user['mail']})
+        if found_user != None:
+            return {'code': '404', 'error': 'User is already there'}
         else:
-            return {'code': "500", 'error': "Internal Server Error"}
+            password = user['password'].encode()
+
+            salt = bcrypt.gensalt()
+            user['password'] = bcrypt.hashpw(password, salt)
+
+            result = users.insert_one(user)
+
+            key_file = open('jwtRS256.key', "r")
+            key = key_file.read()
+
+            id_json = json.loads(dumps(result.inserted_id))
+
+            user['authToken'] = jwt.encode(
+                id_json, key, algorithm='RS256')
+
+            updatedResult = users.replace_one(
+                {'_id': result.inserted_id},  user)
+
+            if updatedResult.acknowledged == True:
+                user['_id'] = str(user['_id'])
+                user['authToken'] = str(user['authToken'])
+                del user['password']
+                return user
+            else:
+                return {'code': "500", 'error': "Internal Server Error"}
 
     @staticmethod
     def CheckUser(user):
