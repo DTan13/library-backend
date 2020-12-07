@@ -9,12 +9,7 @@ def login(request):
     """
     This method is for user to login
     """
-    user_body_data = 0
-    try:
-        body_unicode = request.body.decode('utf-8')
-        user_body_data = json.loads(body_unicode)
-    except json.decoder.JSONDecodeError as DecodeError:
-        print(DecodeError)
+    user_body_data = parseBody(request)
 
     response = User.CheckUser(user_body_data)
     if response['code']:
@@ -27,12 +22,7 @@ def logout(request):
     """
     This method is for user to logout
     """
-    user_body_data = 0
-    try:
-        body_unicode = request.body.decode('utf-8')
-        user_body_data = json.loads(body_unicode)
-    except json.decoder.JSONDecodeError as DecodeError:
-        print(DecodeError)
+    user_body_data = parseBody(request)
 
     response = User.RemoveAuthToken(user_body_data)
     if response['code']:
@@ -45,12 +35,7 @@ def signup(request):
     """
     This method is for user to signup
     """
-    user_body_data = 0
-    try:
-        body_unicode = request.body.decode('utf-8')
-        user_body_data = json.loads(body_unicode)
-    except json.decoder.JSONDecodeError as DecodeError:
-        print(DecodeError)
+    user_body_data = parseBody(request)
 
     response = User.SaveUser(user_body_data)
     if response['code']:
@@ -59,6 +44,14 @@ def signup(request):
 
 
 def me(request):
+    user_body_data = parseBody(request)
+    response = User.GetMe(user_body_data)
+    if response['code']:
+        return JsonResponse(response, status=response['code'], safe=False)
+    return JsonResponse(response, safe=False)
+
+
+def parseBody(request):
     user_body_data = 0
     try:
         body_unicode = request.body.decode('utf-8')
@@ -66,7 +59,4 @@ def me(request):
     except json.decoder.JSONDecodeError as DecodeError:
         print(DecodeError)
 
-    response = User.GetMe(user_body_data)
-    if response['code']:
-        return JsonResponse(response, status=response['code'], safe=False)
-    return JsonResponse(response, safe=False)
+    return user_body_data
