@@ -14,8 +14,12 @@ def login(request):
     user_body_data = parseBody(request)
 
     response = User.CheckUser(user_body_data)
-    if response['code']:
-        return JsonResponse(response, status=response['code'], safe=False)
+    try:
+        if response['code']:
+            return JsonResponse(response, status=response['code'], safe=False)
+    except KeyError:
+        print(KeyError)
+
     return JsonResponse(response, safe=False)
 
 
@@ -27,8 +31,11 @@ def logout(request):
     user_body_data = parseBody(request)
 
     response = User.RemoveAuthToken(user_body_data)
-    if response['code']:
-        return JsonResponse(response, status=response['code'], safe=False)
+    try:
+        if response['code']:
+            return JsonResponse(response, status=response['code'], safe=False)
+    except KeyError:
+        print(KeyError)
     return JsonResponse(response, safe=False)
 
 
@@ -40,14 +47,20 @@ def signup(request):
     user_body_data = parseBody(request)
 
     response = User.SaveUser(user_body_data)
-    if response['code']:
-        return JsonResponse(response, status=response['code'], safe=False)
+    try:
+        if response['code']:
+            return JsonResponse(response, status=response['code'], safe=False)
+    except KeyError:
+        print(KeyError)
     return JsonResponse(response, safe=False)
 
 
 def me(request):
     user_body_data = parseBody(request)
     response = User.GetMe(user_body_data)
-    if response['code']:
-        return JsonResponse(response, status=response['code'], safe=False)
+    try:
+        if response['code']:
+            return JsonResponse(response, status=response['code'], safe=False)
+    except KeyError:
+        print(KeyError)
     return JsonResponse(response, safe=False)
