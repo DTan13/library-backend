@@ -227,3 +227,7 @@ class User(models.Model):
                 return {'code': 500, 'error': 'Internal Server Error'}
         else:
             return {'code': 404, 'error': "Log In first"}
+
+
+class Admin(models.Model):
+    pass
