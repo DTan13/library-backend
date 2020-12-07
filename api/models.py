@@ -116,6 +116,12 @@ class User(models.Model):
                 user['_id'] = str(user['_id'])
                 user['authToken'] = str(user['authToken'])
                 del user['password']
+                
+                try:
+                    if user['book']:
+                        find_user['book'] = str(user['book'])
+                except KeyError:
+                    print(KeyError)
                 return user
             else:
                 return {'code': 500, 'error': "Internal Server Error"}
@@ -143,6 +149,13 @@ class User(models.Model):
             if updatedResult.acknowledged == True:
                 find_user['_id'] = str(find_user['_id'])
                 find_user['authToken'] = str(find_user['authToken'])
+
+                try:
+                    if find_user['book']:
+                        find_user['book'] = str(find_user['book'])
+                except KeyError:
+                    print(KeyError)
+
                 del find_user['password']
                 return find_user
             else:
@@ -173,6 +186,13 @@ class User(models.Model):
         if(decoded_data['$oid'] == user_data['_id']):
             find_user['_id'] = str(find_user['_id'])
             find_user['authToken'] = str(find_user['authToken'])
+
+            try:
+                if find_user['book']:
+                    find_user['book'] = str(find_user['book'])
+            except KeyError:
+                print(KeyError)
+
             del find_user['password']
             return find_user
         else:
