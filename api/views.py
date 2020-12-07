@@ -32,4 +32,10 @@ def books(request):
                 return JsonResponse(data, status=data['code'], safe=False)
         except (KeyError, TypeError) as error:
             print(error)
+
+        for book in data:
+            try:
+                book['_id'] = (book['_id'])['$oid']
+            except KeyError:
+                print(KeyError)
         return JsonResponse(data, safe=False)
