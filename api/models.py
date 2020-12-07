@@ -92,7 +92,7 @@ class User(models.Model):
         found_user = users.find_one({'mail': user['mail']})
 
         if found_user != None:
-            return {'code': 404, 'error': 'Email is already taken!'}
+            return {'code': 409, 'error': 'Email is already taken!'}
         else:
             password = user['password'].encode()
 
@@ -148,7 +148,7 @@ class User(models.Model):
             else:
                 return {'code': 500, 'error': 'Internal Server Error'}
         else:
-            return {'code': 404, 'error': "User not found"}
+            return {'code': 401, 'error': "Incorrect Password"}
 
     @staticmethod
     def GetMe(user_data):
@@ -190,6 +190,7 @@ class User(models.Model):
 
         key_file = open('jwtRS256.key.pub', "r")
         key = key_file.read()
+
         try:
             decoded_data = jwt.decode(
                 find_user['authToken'], key, algorithms='RS256')
@@ -198,10 +199,11 @@ class User(models.Model):
 
         if(decoded_data['$oid'] == user_data['_id']):
             del find_user['authToken']
-            users.replace_one(
+            result = users.replace_one(
                 {'_id': find_user['_id']},  find_user)
-            find_user['_id'] = str(find_user['_id'])
-            del find_user['password']
-            return {'code': 201, 'error': "User logged Out", 'user': find_user}
+            if result.acknowledged == True:
+                return {'code': 205, 'error': "User logged Out"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
         else:
             return {'code': 404, 'error': "Log In first"}
