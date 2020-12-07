@@ -311,10 +311,17 @@ class Admin(models.Model):
             return {'code': 404, 'error': "Log In first"}
 
         if (decoded_data['$oid'] == user['_id']):
-            del find_user['book']
-            del requested_book['user']
-            # find_user['book'] = requested_book['_id']
-            # requested_book['user'] = find_user['_id']
+            try:
+                if find_user['book']:
+                    del find_user['book']
+            except KeyError:
+                print(KeyError)
+            try:
+                if requested_book['user']:
+                    del requested_book['user']
+            except KeyError:
+                print(KeyError)
+
             result_user = users.replace_one(
                 {'_id': find_user['_id']}, find_user
             )
