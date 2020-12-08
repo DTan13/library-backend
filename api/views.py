@@ -16,8 +16,13 @@ def books(request):
     body_data = parseBody(request)
 
     if request.method == 'POST':
-        result = Book.SaveBook(body_data)
-        return HttpResponse(result)
+        result = Admin.SaveBook(body_data['book'], body_data['admin'])
+
+        try:
+            if result['code']:
+                return JsonResponse(result, status=result['code'], safe=False)
+        except KeyError as error:
+            print(error)
 
     if request.method == 'GET':
         page = request.GET.get('page') if request.GET.get(

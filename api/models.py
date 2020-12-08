@@ -49,14 +49,6 @@ class Book(models.Model):
         return self.title
 
     @staticmethod
-    def SaveBook(book):
-        """
-        This method saves Book to database
-        """
-        result = books.insert_one(book)
-        return result.acknowledged
-
-    @staticmethod
     def GetBooks(page, limit):
         """
         Get books from database with pagination
@@ -244,6 +236,7 @@ class User(models.Model):
 class Admin(models.Model):
     @staticmethod
     def CheckUser(admin):
+
         find_admin = admins.find_one({"mail": admin['mail']})
 
         if find_admin == None:
@@ -275,6 +268,7 @@ class Admin(models.Model):
 
     @staticmethod
     def BorrowBook(user, book):
+
         try:
             find_user = users.find_one({'_id': ObjectId(user['_id'])})
         except bson.errors.InvalidId:
@@ -386,3 +380,34 @@ class Admin(models.Model):
 
             if result_user.acknowledged == True and result_book.acknowledged == True:
                 return {'code': 200, 'error': "Book Submitted"}
+
+    @staticmethod
+    def SaveBook(book, admin):
+        """
+        This method saves Book to database
+        """
+        try:
+            find_admin = admins.find_one({'_id': ObjectId(admin['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_admin['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if (decoded_data['$oid'] == admin['_id']):
+            result = books.insert_one(book)
+
+        if result.acknowledged:
+            book['_id'] = str(book['_id'])
+            return {'code': 201, 'error': "Book created!", 'book': book}
+        else:
+            return {'code': 500, 'error': 'Internal Server Error'}
