@@ -19,6 +19,7 @@ backendDB = client['te-project-backend-db']
 
 books = backendDB['books']
 users = backendDB['users']
+admins = backendDB['admins']
 
 
 class Book(models.Model):
@@ -230,7 +231,36 @@ class User(models.Model):
 
 
 class Admin(models.Model):
-    pass
+    @staticmethod
+    def CheckUser(admin):
+        find_admin = admins.find_one({"mail": admin['mail']})
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Sign Up first"}
+
+        if bcrypt.checkpw(admin['password'].encode(), find_admin['password']):
+
+            key_file = open('jwtRS256.key', "r")
+            key = key_file.read()
+
+            id_json = json.loads(dumps(find_admin['_id']))
+
+            find_admin['authToken'] = jwt.encode(
+                id_json, key, algorithm='RS256')
+
+            updatedResult = users.replace_one(
+                {'_id': find_admin['_id']},  find_admin)
+
+            if updatedResult.acknowledged == True:
+                find_admin['_id'] = str(find_admin['_id'])
+                find_admin['authToken'] = str(find_admin['authToken'])
+                find_admin['isAdmin'] = True
+                del find_admin['password']
+                return find_admin
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 401, 'error': "Incorrect Password"}
 
     @staticmethod
     def BorrowBook(user, book):
