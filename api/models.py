@@ -129,6 +129,7 @@ class User(models.Model):
 
     @staticmethod
     def CheckUser(user):
+
         find_user = users.find_one({"mail": user['mail']})
 
         if find_user == None:
@@ -201,8 +202,12 @@ class User(models.Model):
 
     @staticmethod
     def RemoveAuthToken(user_data):
+
         try:
             find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+            if find_user == None:
+                find_user = admins.find_one(
+                    {'_id': ObjectId(user_data['_id'])})
         except bson.errors.InvalidId:
             return {'code': 404, 'error': "Log In first"}
 
@@ -220,8 +225,14 @@ class User(models.Model):
 
         if(decoded_data['$oid'] == user_data['_id']):
             del find_user['authToken']
-            result = users.replace_one(
-                {'_id': find_user['_id']},  find_user)
+            try:
+                if user_data['isAdmin']:
+                    result = admins.replace_one(
+                        {'_id': find_user['_id']}, find_user
+                    )
+            except KeyError:
+                result = users.replace_one(
+                    {'_id': find_user['_id']},  find_user)
             if result.acknowledged == True:
                 return {'code': 205, 'error': "User logged Out"}
             else:
@@ -248,7 +259,7 @@ class Admin(models.Model):
             find_admin['authToken'] = jwt.encode(
                 id_json, key, algorithm='RS256')
 
-            updatedResult = users.replace_one(
+            updatedResult = admins.replace_one(
                 {'_id': find_admin['_id']},  find_admin)
 
             if updatedResult.acknowledged == True:
