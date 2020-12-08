@@ -252,7 +252,7 @@ class Admin(models.Model):
             return {'code': 404, 'error': "Log In first"}
 
         try:
-            if find_user['book']:
+            if find_user['book'] != None:
                 return {'code': 403, 'error': "You have taken a book!"}
         except KeyError:
             print(KeyError)
@@ -285,13 +285,6 @@ class Admin(models.Model):
 
     @staticmethod
     def SubmitBook(user, book):
-        try:
-            requested_book = books.find_one({'_id': ObjectId(book['_id'])})
-        except bson.errors.InvalidId:
-            return {'code': 404, 'error': "Book does not exist"}
-
-        if requested_book == None:
-            return {'code': 404, 'error': "Book does not exist"}
 
         try:
             find_user = users.find_one({'_id': ObjectId(user['_id'])})
@@ -310,12 +303,33 @@ class Admin(models.Model):
         except KeyError:
             return {'code': 404, 'error': "Log In first"}
 
+        try:
+            if find_user['book']:
+                pass
+        except KeyError:
+            return {'code': 404, 'error': 'Borrow the book first'}
+
+        try:
+            requested_book = books.find_one({'_id': ObjectId(book['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        if requested_book == None:
+            return {'code': 404, 'error': "Book does not exist"}
+
+        try:
+            if requested_book['_id'] != find_user['book']:
+                return {'code': 403, 'error': "Submitting wrong book"}
+        except KeyError:
+            return {'code': 404, 'error': "You haven't Borrowed this Book"}
+
         if (decoded_data['$oid'] == user['_id']):
             try:
                 if find_user['book']:
                     del find_user['book']
             except KeyError:
                 print(KeyError)
+
             try:
                 if requested_book['user']:
                     del requested_book['user']
@@ -328,5 +342,6 @@ class Admin(models.Model):
             result_book = books.replace_one(
                 {'_id': requested_book['_id']}, requested_book
             )
+
             if result_user.acknowledged == True and result_book.acknowledged == True:
                 return {'code': 200, 'error': "Book Submitted"}
