@@ -28,7 +28,7 @@ def books(request):
         page = request.GET.get('page') if request.GET.get(
             'page') != None else 1
         limit = request.GET.get('limit') if request.GET.get(
-            'page') != None else 20
+            'page') != None else 50
 
         data = Book.GetBooks(int(page), int(limit))
 
