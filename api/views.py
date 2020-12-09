@@ -41,9 +41,10 @@ def books(request):
         for book in data:
             try:
                 book['_id'] = (book['_id'])['$oid']
+                book['user'] = (book['user'])['$oid']
             except KeyError:
                 print(KeyError)
-        return JsonResponse(data, safe=False)
+        return JsonResponse({'code': 200, 'books': data}, safe=False)
 
 
 @csrf_exempt
