@@ -2,7 +2,7 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 
-from api.models import User
+from api.models import User, Admin
 from api.utils import parseBody
 
 
@@ -16,7 +16,12 @@ def login(request):
     response = User.CheckUser(user_body_data)
     try:
         if response['code']:
-            return JsonResponse(response, status=response['code'], safe=False)
+            admin_response = Admin.CheckUser(user_body_data)
+            try:
+                if admin_response['code']:
+                    return JsonResponse(response, status=response['code'], safe=False)
+            except KeyError:
+                return JsonResponse(admin_response, safe=False)
     except KeyError:
         print(KeyError)
 

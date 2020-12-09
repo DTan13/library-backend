@@ -19,6 +19,7 @@ backendDB = client['te-project-backend-db']
 
 books = backendDB['books']
 users = backendDB['users']
+admins = backendDB['admins']
 
 
 class Book(models.Model):
@@ -46,14 +47,6 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
-
-    @staticmethod
-    def SaveBook(book):
-        """
-        This method saves Book to database
-        """
-        result = books.insert_one(book)
-        return result.acknowledged
 
     @staticmethod
     def GetBooks(page, limit):
@@ -128,6 +121,7 @@ class User(models.Model):
 
     @staticmethod
     def CheckUser(user):
+
         find_user = users.find_one({"mail": user['mail']})
 
         if find_user == None:
@@ -200,8 +194,12 @@ class User(models.Model):
 
     @staticmethod
     def RemoveAuthToken(user_data):
+
         try:
             find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+            if find_user == None:
+                find_user = admins.find_one(
+                    {'_id': ObjectId(user_data['_id'])})
         except bson.errors.InvalidId:
             return {'code': 404, 'error': "Log In first"}
 
@@ -219,8 +217,14 @@ class User(models.Model):
 
         if(decoded_data['$oid'] == user_data['_id']):
             del find_user['authToken']
-            result = users.replace_one(
-                {'_id': find_user['_id']},  find_user)
+            try:
+                if user_data['isAdmin']:
+                    result = admins.replace_one(
+                        {'_id': find_user['_id']}, find_user
+                    )
+            except KeyError:
+                result = users.replace_one(
+                    {'_id': find_user['_id']},  find_user)
             if result.acknowledged == True:
                 return {'code': 205, 'error': "User logged Out"}
             else:
@@ -230,10 +234,41 @@ class User(models.Model):
 
 
 class Admin(models.Model):
-    pass
+    @staticmethod
+    def CheckUser(admin):
+
+        find_admin = admins.find_one({"mail": admin['mail']})
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Sign Up first"}
+
+        if bcrypt.checkpw(admin['password'].encode(), find_admin['password']):
+
+            key_file = open('jwtRS256.key', "r")
+            key = key_file.read()
+
+            id_json = json.loads(dumps(find_admin['_id']))
+
+            find_admin['authToken'] = jwt.encode(
+                id_json, key, algorithm='RS256')
+
+            updatedResult = admins.replace_one(
+                {'_id': find_admin['_id']},  find_admin)
+
+            if updatedResult.acknowledged == True:
+                find_admin['_id'] = str(find_admin['_id'])
+                find_admin['authToken'] = str(find_admin['authToken'])
+                find_admin['isAdmin'] = True
+                del find_admin['password']
+                return find_admin
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 401, 'error': "Incorrect Password"}
 
     @staticmethod
     def BorrowBook(user, book):
+
         try:
             find_user = users.find_one({'_id': ObjectId(user['_id'])})
         except bson.errors.InvalidId:
@@ -345,3 +380,66 @@ class Admin(models.Model):
 
             if result_user.acknowledged == True and result_book.acknowledged == True:
                 return {'code': 200, 'error': "Book Submitted"}
+
+    @staticmethod
+    def SaveBook(book, admin):
+        """
+        This method saves Book to database
+        """
+        try:
+            find_admin = admins.find_one({'_id': ObjectId(admin['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_admin['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if (decoded_data['$oid'] == admin['_id']):
+            result = books.insert_one(book)
+
+        if result.acknowledged:
+            book['_id'] = str(book['_id'])
+            return {'code': 201, 'error': "Book created!", 'book': book}
+        else:
+            return {'code': 500, 'error': 'Internal Server Error'}
+
+    @staticmethod
+    def GetUsers(page, limit, query, admin):
+
+        try:
+            find_admin = admins.find_one({'_id': ObjectId(admin['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_admin['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if (decoded_data['$oid'] == admin['_id']):
+            skips = int(limit * (int(page) - 1))
+            userList = users.find({}).skip(skips).limit(limit)
+            clr_json = dumps(userList, json_options=CANONICAL_JSON_OPTIONS)
+
+            if clr_json == '[]':
+                return {'code': 404, 'error': "No results found for your search!"}
+            else:
+                return {'code': 200, 'users': json.loads(clr_json)}
+        else:
+            return {'code': 404, 'error': "Sign Up First"}

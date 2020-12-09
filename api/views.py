@@ -16,14 +16,19 @@ def books(request):
     body_data = parseBody(request)
 
     if request.method == 'POST':
-        result = Book.SaveBook(body_data)
-        return HttpResponse(result)
+        result = Admin.SaveBook(body_data['book'], body_data['admin'])
+
+        try:
+            if result['code']:
+                return JsonResponse(result, status=result['code'], safe=False)
+        except KeyError as error:
+            print(error)
 
     if request.method == 'GET':
         page = request.GET.get('page') if request.GET.get(
             'page') != None else 1
         limit = request.GET.get('limit') if request.GET.get(
-            'page') != None else 20
+            'page') != None else 50
 
         data = Book.GetBooks(int(page), int(limit))
 
@@ -36,9 +41,10 @@ def books(request):
         for book in data:
             try:
                 book['_id'] = (book['_id'])['$oid']
+                book['user'] = (book['user'])['$oid']
             except KeyError:
                 print(KeyError)
-        return JsonResponse(data, safe=False)
+        return JsonResponse({'code': 200, 'books': data}, safe=False)
 
 
 @csrf_exempt
@@ -75,3 +81,37 @@ def book(request):
         print(KeyError)
 
     return JsonResponse(response, safe=False)
+
+
+@csrf_exempt
+def users(request):
+    body_data = parseBody(request)
+
+    if request.method == "POST":
+        return JsonResponse({'code': 404, 'error': "Not Found"}, status=404, safe=False)
+
+    if request.method == 'GET':
+        page = request.GET.get('page') if request.GET.get(
+            'page') != None else 1
+        limit = request.GET.get('limit') if request.GET.get(
+            'page') != None else 100
+        query = request.GET.get('query') if request.GET.get(
+            'query') != None else None
+
+        page = int(page)
+        limit = int(limit)
+        data = Admin.GetUsers(page, limit, query, body_data['admin'])
+
+        try:
+            if data['code']:
+                for user in data['users']:
+                    try:
+                        user['_id'] = (user['_id'])['$oid']
+                        del user['password']
+                        del user['authToken']
+                        user['book'] = (user['book'])['$oid']
+                    except KeyError:
+                        print(KeyError)
+                return JsonResponse(data, status=data['code'], safe=False)
+        except (KeyError, TypeError) as error:
+            print(error)
