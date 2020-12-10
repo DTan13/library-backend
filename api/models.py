@@ -565,3 +565,48 @@ class Admin(models.Model):
             return {'code': 201, 'error': "Book deleted!"}
         else:
             return {'code': 500, 'error': 'Internal Server Error'}
+
+    @staticmethod
+    def UpdateBook(updatedbook, admin):
+        """
+        Allow admin to update Book
+        """
+        try:
+            find_user = users.find_one({'_id': ObjectId(admin)})
+            if find_user == None:
+                # Check if user is admin
+                find_user = admins.find_one({'_id': ObjectId(admin)})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In first"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == admin):
+            try:
+                updatedbookId = updatedbook['_id']
+                del updatedbook['_id']
+                keys = updatedbook.keys()
+                for key in keys:
+                    try:
+                        result = books.update_one(
+                            {'_id': ObjectId(updatedbookId)}, {"$set": {key: updatedbook[key]}})
+                    except KeyError:
+                        print(KeyError)
+            except KeyError:
+                print(KeyError)
+            if result.acknowledged == True:
+                return {'code': 205, 'error': "Book Updated"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 404, 'error': "Log In first"}

@@ -21,6 +21,10 @@ def books(request):
             result = Admin.SaveBook(body_data['book'], body_data['admin'])
         elif body_data['type'] == 'delete':
             result = Admin.RemoveBook(body_data['book'], body_data['admin'])
+        elif body_data['type'] == 'update':
+            result = Admin.UpdateBook(body_data['book'], body_data['admin'])
+        else:
+            return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
 
         try:
             if result['code']:
