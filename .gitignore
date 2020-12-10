@@ -1,7 +1,3 @@
 db.sqlite3
 __pycache__
 .vscode/settings.json
-
-# How to generate JWT RS256 key [Link](https://gist.github.com/ygotthilf/baa58da5c3dd1f69fae9)
-jwtRS256.key
-jwtRS256.key.pub

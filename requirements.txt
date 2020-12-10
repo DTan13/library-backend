@@ -1,0 +1,6 @@
+django
+pymongo
+jwt
+bcrypt
+bson
+dnspython
