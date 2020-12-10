@@ -7,15 +7,21 @@ import bcrypt
 import jwt
 import bson
 from bson.objectid import ObjectId
+import urllib
 
 try:
     # Make sure MongoDB is running on port 27017
     # If you are having problems with "localhost" try "mongodb://127.0.0.1:27017/"
-    client = pymongo.MongoClient('mongodb://localhost:27017/')
+    mongoURI = "mongodb+srv://ADPRU_admin:" + \
+        urllib.parse.quote("ADPRU@2020") + \
+        "@library.i4v6d.mongodb.net/database?retryWrites=true&w=majority"
+
+    client = pymongo.MongoClient(mongoURI)
+
 except errors.ConnectionFailure as ConnectionError:
     print(ConnectionError.message)
 
-backendDB = client['te-project-backend-db']
+backendDB = client['database']
 
 books = backendDB['books']
 users = backendDB['users']
