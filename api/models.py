@@ -278,6 +278,42 @@ class User(models.Model):
         else:
             return {'code': 404, 'error': "Log In first"}
 
+    @staticmethod
+    def RemoveUser(user_data):
+        """
+        For updating user Data
+        """
+        try:
+            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In first"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == user_data['_id']):
+            try:
+                updateduserId = user_data['_id']
+                user = users.find_one({'_id': ObjectId(user_data['_id'])})
+                result = users.delete_one({'_id': ObjectId(user_data['_id'])})
+            except KeyError:
+                print(KeyError)
+            if result.deleted_count == 1:
+                return {'code': 205, 'error': "User deleted"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 404, 'error': "Log In first"}
+
 
 class Admin(models.Model):
     @staticmethod
