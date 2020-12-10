@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from api.models import Book, Admin
+from api.models import Book, Admin, User
 from api.utils import parseBody
 
 
@@ -88,7 +88,13 @@ def users(request):
     body_data = parseBody(request)
 
     if request.method == "POST":
-        return JsonResponse({'code': 404, 'error': "Not Found"}, status=404, safe=False)
+        data = User.UpdateUser(
+            user_data=body_data['user'], updateduser=body_data['updateduser'])
+        try:
+            if data['code']:
+                return JsonResponse(data, status=data['code'], safe=False)
+        except (KeyError, TypeError) as error:
+            print(error)
 
     if request.method == 'GET':
         page = request.GET.get('page') if request.GET.get(

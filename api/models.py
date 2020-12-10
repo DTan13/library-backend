@@ -232,6 +232,52 @@ class User(models.Model):
         else:
             return {'code': 404, 'error': "Log In first"}
 
+    @staticmethod
+    def UpdateUser(user_data, updateduser):
+        """
+        For updating user Data
+        """
+        try:
+            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+            if find_user == None:
+                # Check if user is admin
+                find_user = admins.find_one(
+                    {'_id': ObjectId(user_data['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In first"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == user_data['_id']):
+            try:
+                updateduserId = updateduser['_id']
+                del updateduser['_id']
+                keys = updateduser.keys()
+                for key in keys:
+                    try:
+                        result = users.update_one(
+                            {'_id': ObjectId(updateduserId)}, {"$set": {key: updateduser[key]}})
+                    except KeyError:
+                        print(KeyError)
+            except KeyError:
+                print(KeyError)
+            if result.acknowledged == True:
+                return {'code': 205, 'error': "User Updated"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 404, 'error': "Log In first"}
+
 
 class Admin(models.Model):
     @staticmethod
