@@ -7,15 +7,21 @@ import bcrypt
 import jwt
 import bson
 from bson.objectid import ObjectId
+import urllib
 
 try:
     # Make sure MongoDB is running on port 27017
     # If you are having problems with "localhost" try "mongodb://127.0.0.1:27017/"
-    client = pymongo.MongoClient('mongodb://localhost:27017/')
+    mongoURI = "mongodb+srv://ADPRU_admin:" + \
+        urllib.parse.quote("ADPRU@2020") + \
+        "@library.i4v6d.mongodb.net/database?retryWrites=true&w=majority"
+
+    client = pymongo.MongoClient(mongoURI)
+
 except errors.ConnectionFailure as ConnectionError:
     print(ConnectionError.message)
 
-backendDB = client['te-project-backend-db']
+backendDB = client['database']
 
 books = backendDB['books']
 users = backendDB['users']
@@ -232,6 +238,98 @@ class User(models.Model):
         else:
             return {'code': 404, 'error': "Log In first"}
 
+    @staticmethod
+    def UpdateUser(user_data, updateduser):
+        """
+        For updating user Data
+        """
+        try:
+            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+            if find_user == None:
+                # Check if user is admin
+                find_user = admins.find_one(
+                    {'_id': ObjectId(user_data['_id'])})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In first"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == user_data['_id']):
+            try:
+                updateduserId = updateduser['_id']
+                del updateduser['_id']
+                keys = updateduser.keys()
+                for key in keys:
+                    try:
+                        result = users.update_one(
+                            {'_id': ObjectId(updateduserId)}, {"$set": {key: updateduser[key]}})
+                    except KeyError:
+                        print(KeyError)
+            except KeyError:
+                print(KeyError)
+            if result.acknowledged == True:
+                return {'code': 205, 'error': "User Updated"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 404, 'error': "Log In first"}
+
+    @staticmethod
+    def RemoveUser(admin, user):
+        """
+        For updating user Data
+        """
+        try:
+            find_admin = users.find_one({'_id': ObjectId(admin)})
+            if find_admin == None:
+                find_admin = admins.find_one(
+                    {'_id': ObjectId(admin)})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In first"}
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_admin['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == admin):
+            try:
+                updateduserId = user
+                found_user = users.find_one({'_id': ObjectId(user)})
+                try:
+                    book_id = found_user['book']
+                    book = books.find_one({'_id': book_id})
+                    del book['user']
+                    books.replace_one({'_id': book_id}, book)
+                except KeyError:
+                    print(KeyError)
+                result = users.delete_one({'_id': ObjectId(found_user['_id'])})
+            except KeyError:
+                print(KeyError)
+            if result.deleted_count == 1:
+                return {'code': 205, 'error': "User deleted"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 404, 'error': "Log In first"}
+
 
 class Admin(models.Model):
     @staticmethod
@@ -443,3 +541,78 @@ class Admin(models.Model):
                 return {'code': 200, 'users': json.loads(clr_json)}
         else:
             return {'code': 404, 'error': "Sign Up First"}
+
+    @staticmethod
+    def RemoveBook(book, admin):
+        """
+        Allow admin to remove book
+        """
+        try:
+            find_admin = admins.find_one({'_id': ObjectId(admin)})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_admin['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if (decoded_data['$oid'] == admin):
+            result = books.delete_one({"_id": ObjectId(book)})
+
+        if result.deleted_count == 1:
+            return {'code': 201, 'error': "Book deleted!"}
+        else:
+            return {'code': 500, 'error': 'Internal Server Error'}
+
+    @staticmethod
+    def UpdateBook(updatedbook, admin):
+        """
+        Allow admin to update Book
+        """
+        try:
+            find_user = users.find_one({'_id': ObjectId(admin)})
+            if find_user == None:
+                # Check if user is admin
+                find_user = admins.find_one({'_id': ObjectId(admin)})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In first"}
+
+        if find_user == None:
+            return {'code': 404, 'error': "Log In first"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_user['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if(decoded_data['$oid'] == admin):
+            try:
+                updatedbookId = updatedbook['_id']
+                del updatedbook['_id']
+                keys = updatedbook.keys()
+                for key in keys:
+                    try:
+                        result = books.update_one(
+                            {'_id': ObjectId(updatedbookId)}, {"$set": {key: updatedbook[key]}})
+                    except KeyError:
+                        print(KeyError)
+            except KeyError:
+                print(KeyError)
+            if result.acknowledged == True:
+                return {'code': 205, 'error': "Book Updated"}
+            else:
+                return {'code': 500, 'error': 'Internal Server Error'}
+        else:
+            return {'code': 404, 'error': "Log In first"}

@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from api.models import Book, Admin
+from api.models import Book, Admin, User
 from api.utils import parseBody
 
 
@@ -16,7 +16,15 @@ def books(request):
     body_data = parseBody(request)
 
     if request.method == 'POST':
-        result = Admin.SaveBook(body_data['book'], body_data['admin'])
+
+        if body_data['type'] == "save":
+            result = Admin.SaveBook(body_data['book'], body_data['admin'])
+        elif body_data['type'] == 'delete':
+            result = Admin.RemoveBook(body_data['book'], body_data['admin'])
+        elif body_data['type'] == 'update':
+            result = Admin.UpdateBook(body_data['book'], body_data['admin'])
+        else:
+            return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
 
         try:
             if result['code']:
@@ -88,7 +96,13 @@ def users(request):
     body_data = parseBody(request)
 
     if request.method == "POST":
-        return JsonResponse({'code': 404, 'error': "Not Found"}, status=404, safe=False)
+        data = User.UpdateUser(
+            user_data=body_data['user'], updateduser=body_data['updateduser'])
+        try:
+            if data['code']:
+                return JsonResponse(data, status=data['code'], safe=False)
+        except (KeyError, TypeError) as error:
+            print(error)
 
     if request.method == 'GET':
         page = request.GET.get('page') if request.GET.get(
@@ -112,6 +126,20 @@ def users(request):
                         user['book'] = (user['book'])['$oid']
                     except KeyError:
                         print(KeyError)
+                return JsonResponse(data, status=data['code'], safe=False)
+        except (KeyError, TypeError) as error:
+            print(error)
+            return JsonResponse(data, status=data['code'], safe=False)
+
+
+@csrf_exempt
+def remove(request):
+    body_data = parseBody(request)
+
+    if request.method == "POST":
+        data = User.RemoveUser(body_data['admin'], body_data['user'])
+        try:
+            if data['code']:
                 return JsonResponse(data, status=data['code'], safe=False)
         except (KeyError, TypeError) as error:
             print(error)
