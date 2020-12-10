@@ -129,7 +129,7 @@ def remove(request):
     body_data = parseBody(request)
 
     if request.method == "POST":
-        data = User.RemoveUser(body_data)
+        data = User.RemoveUser(body_data['admin'], body_data['user'])
         try:
             if data['code']:
                 return JsonResponse(data, status=data['code'], safe=False)

@@ -279,16 +279,19 @@ class User(models.Model):
             return {'code': 404, 'error': "Log In first"}
 
     @staticmethod
-    def RemoveUser(user_data):
+    def RemoveUser(admin, user):
         """
         For updating user Data
         """
         try:
-            find_user = users.find_one({'_id': ObjectId(user_data['_id'])})
+            find_admin = users.find_one({'_id': ObjectId(admin)})
+            if find_admin == None:
+                find_admin = admins.find_one(
+                    {'_id': ObjectId(admin)})
         except bson.errors.InvalidId:
             return {'code': 404, 'error': "Log In first"}
 
-        if find_user == None:
+        if find_admin == None:
             return {'code': 404, 'error': "Log In first"}
 
         key_file = open('jwtRS256.key.pub', "r")
@@ -296,22 +299,22 @@ class User(models.Model):
 
         try:
             decoded_data = jwt.decode(
-                find_user['authToken'], key, algorithms='RS256')
+                find_admin['authToken'], key, algorithms='RS256')
         except KeyError:
             return {'code': 404, 'error': "Log In first"}
 
-        if(decoded_data['$oid'] == user_data['_id']):
+        if(decoded_data['$oid'] == admin):
             try:
-                updateduserId = user_data['_id']
-                user = users.find_one({'_id': ObjectId(user_data['_id'])})
+                updateduserId = user
+                found_user = users.find_one({'_id': ObjectId(user)})
                 try:
-                    book_id = user['book']
+                    book_id = found_user['book']
                     book = books.find_one({'_id': book_id})
                     del book['user']
                     books.replace_one({'_id': book_id}, book)
                 except KeyError:
                     print(KeyError)
-                result = users.delete_one({'_id': ObjectId(user_data['_id'])})
+                result = users.delete_one({'_id': ObjectId(found_user['_id'])})
             except KeyError:
                 print(KeyError)
             if result.deleted_count == 1:
