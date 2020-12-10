@@ -304,6 +304,13 @@ class User(models.Model):
             try:
                 updateduserId = user_data['_id']
                 user = users.find_one({'_id': ObjectId(user_data['_id'])})
+                try:
+                    book_id = user['book']
+                    book = books.find_one({'_id': book_id})
+                    del book['user']
+                    books.replace_one({'_id': book_id}, book)
+                except KeyError:
+                    print(KeyError)
                 result = users.delete_one({'_id': ObjectId(user_data['_id'])})
             except KeyError:
                 print(KeyError)
