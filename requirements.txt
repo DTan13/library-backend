@@ -4,3 +4,4 @@ jwt
 bcrypt
 bson
 dnspython
+gunicorn
