@@ -121,3 +121,17 @@ def users(request):
                 return JsonResponse(data, status=data['code'], safe=False)
         except (KeyError, TypeError) as error:
             print(error)
+            return JsonResponse(data, status=data['code'], safe=False)
+
+
+@csrf_exempt
+def remove(request):
+    body_data = parseBody(request)
+
+    if request.method == "POST":
+        data = User.RemoveUser(body_data)
+        try:
+            if data['code']:
+                return JsonResponse(data, status=data['code'], safe=False)
+        except (KeyError, TypeError) as error:
+            print(error)
