@@ -16,7 +16,11 @@ def books(request):
     body_data = parseBody(request)
 
     if request.method == 'POST':
-        result = Admin.SaveBook(body_data['book'], body_data['admin'])
+
+        if body_data['type'] == "save":
+            result = Admin.SaveBook(body_data['book'], body_data['admin'])
+        elif body_data['type'] == 'delete':
+            result = Admin.RemoveBook(body_data['book'], body_data['admin'])
 
         try:
             if result['code']:

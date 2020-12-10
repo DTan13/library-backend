@@ -535,3 +535,33 @@ class Admin(models.Model):
                 return {'code': 200, 'users': json.loads(clr_json)}
         else:
             return {'code': 404, 'error': "Sign Up First"}
+
+    @staticmethod
+    def RemoveBook(book, admin):
+        """
+        Allow admin to remove book
+        """
+        try:
+            find_admin = admins.find_one({'_id': ObjectId(admin)})
+        except bson.errors.InvalidId:
+            return {'code': 404, 'error': "Log In First"}
+
+        if find_admin == None:
+            return {'code': 404, 'error': "Sign Up First"}
+
+        key_file = open('jwtRS256.key.pub', "r")
+        key = key_file.read()
+
+        try:
+            decoded_data = jwt.decode(
+                find_admin['authToken'], key, algorithms='RS256')
+        except KeyError:
+            return {'code': 404, 'error': "Log In first"}
+
+        if (decoded_data['$oid'] == admin):
+            result = books.delete_one({"_id": ObjectId(book)})
+
+        if result.deleted_count == 1:
+            return {'code': 201, 'error': "Book deleted!"}
+        else:
+            return {'code': 500, 'error': 'Internal Server Error'}
