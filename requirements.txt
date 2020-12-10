@@ -3,3 +3,4 @@ pymongo
 jwt
 bcrypt
 dnspython
+gunicorn
