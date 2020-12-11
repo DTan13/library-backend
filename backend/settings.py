@@ -109,4 +109,4 @@ USE_L10N = True
 USE_TZ = True
 
 # Activate Django-Heroku.
-# django_heroku.settings(locals())
+django_heroku.settings(locals())
