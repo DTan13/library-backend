@@ -13,6 +13,9 @@ def login(request):
     """
     user_body_data = parseBody(request)
 
+    if user_body_data == 0:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
     response = User.CheckUser(user_body_data)
     try:
         if response['code']:
@@ -35,6 +38,9 @@ def logout(request):
     """
     user_body_data = parseBody(request)
 
+    if user_body_data == 0:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
     response = User.RemoveAuthToken(user_body_data)
     try:
         if response['code']:
@@ -51,6 +57,9 @@ def signup(request):
     """
     user_body_data = parseBody(request)
 
+    if user_body_data == 0:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
     response = User.SaveUser(user_body_data)
     try:
         if response['code']:
@@ -62,6 +71,10 @@ def signup(request):
 
 def me(request):
     user_body_data = parseBody(request)
+
+    if user_body_data == 0:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
     response = User.GetMe(user_body_data)
     try:
         if response['code']:

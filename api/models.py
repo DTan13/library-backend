@@ -14,6 +14,7 @@ try:
         urllib.parse.quote("ADPRU@2020") + \
         "@library.i4v6d.mongodb.net/database?retryWrites=true&w=majority"
     client = pymongo.MongoClient(mongoURI)
+    # client = pymongo.MongoClient("mongodb://127.0.0.1:27017/")
 except errors.ConnectionFailure as ConnectionError:
     print(ConnectionError.message)
 
@@ -56,7 +57,6 @@ class Book(models.Model):
         Get books from database with pagination
         If nothing is provided get first 20 books
         """
-
         skips = int(limit * (int(page) - 1))
 
         result = books.find({}).skip(skips).limit(limit)
@@ -507,8 +507,7 @@ class Admin(models.Model):
             return {'code': 500, 'error': 'Internal Server Error'}
 
     @staticmethod
-    def GetUsers(page, limit, query, admin):
-
+    def GetUsers(page, limit, admin):
         try:
             find_admin = admins.find_one({'_id': ObjectId(admin['_id'])})
         except bson.errors.InvalidId:
@@ -520,9 +519,11 @@ class Admin(models.Model):
         key_file = open('jwtRS256.key.pub', "r")
         key = key_file.read()
 
+        token = find_admin['authToken']
+
         try:
             decoded_data = jwt.decode(
-                find_admin['authToken'], key, algorithms='RS256')
+                token, key, algorithms='RS256')
         except KeyError:
             return {'code': 404, 'error': "Log In first"}
 

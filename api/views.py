@@ -16,14 +16,16 @@ def books(request):
     body_data = parseBody(request)
 
     if request.method == 'POST':
-
-        if body_data['type'] == "save":
-            result = Admin.SaveBook(body_data['book'], body_data['admin'])
-        elif body_data['type'] == 'delete':
-            result = Admin.RemoveBook(body_data['book'], body_data['admin'])
-        elif body_data['type'] == 'update':
-            result = Admin.UpdateBook(body_data['book'], body_data['admin'])
-        else:
+        try:
+            if body_data['type'] == "save":
+                result = Admin.SaveBook(body_data['book'], body_data['admin'])
+            elif body_data['type'] == 'delete':
+                result = Admin.RemoveBook(
+                    body_data['book'], body_data['admin'])
+            elif body_data['type'] == 'update':
+                result = Admin.UpdateBook(
+                    body_data['book'], body_data['admin'])
+        except KeyError:
             return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
 
         try:
@@ -36,7 +38,7 @@ def books(request):
         page = request.GET.get('page') if request.GET.get(
             'page') != None else 1
         limit = request.GET.get('limit') if request.GET.get(
-            'page') != None else 50
+            'limit') != None else 100
 
         data = Book.GetBooks(int(page), int(limit))
 
@@ -59,28 +61,24 @@ def books(request):
 def book(request):
     '''
     Method for various actions related to books
-    request={
-        "type":"borrow",
-        "user":{
-            # User id and token
-        },
-        "book":{
-            # Book id
-        }
-    }
     '''
     parsedRequest = parseBody(request)
     response = None
 
-    # condition for borrowing request must contain "type":"borrow"
-    if parsedRequest['type'] == 'borrow':
-        response = Admin.BorrowBook(
-            parsedRequest['user'], parsedRequest['book'])
+    if parsedRequest == 0:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
 
-    if parsedRequest['type'] == "submit":
-        response = Admin.SubmitBook(
-            parsedRequest['user'], parsedRequest['book']
-        )
+    try:
+        if parsedRequest['type'] == 'borrow':
+            response = Admin.BorrowBook(
+                parsedRequest['user'], parsedRequest['book'])
+
+        if parsedRequest['type'] == "submit":
+            response = Admin.SubmitBook(
+                parsedRequest['user'], parsedRequest['book']
+            )
+    except KeyError:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
 
     try:
         if response['code']:
@@ -95,9 +93,17 @@ def book(request):
 def users(request):
     body_data = parseBody(request)
 
+    if body_data == 0:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
     if request.method == "POST":
-        data = User.UpdateUser(
-            user_data=body_data['user'], updateduser=body_data['updateduser'])
+        try:
+            data = User.UpdateUser(
+                user_data=body_data['user'], updateduser=body_data['updateduser']
+            )
+        except KeyError:
+            return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
         try:
             if data['code']:
                 return JsonResponse(data, status=data['code'], safe=False)
@@ -109,12 +115,10 @@ def users(request):
             'page') != None else 1
         limit = request.GET.get('limit') if request.GET.get(
             'page') != None else 100
-        query = request.GET.get('query') if request.GET.get(
-            'query') != None else None
 
         page = int(page)
         limit = int(limit)
-        data = Admin.GetUsers(page, limit, query, body_data['admin'])
+        data = Admin.GetUsers(page, limit, body_data['admin'])
 
         try:
             if data['code']:
@@ -137,9 +141,15 @@ def remove(request):
     body_data = parseBody(request)
 
     if request.method == "POST":
-        data = User.RemoveUser(body_data['admin'], body_data['user'])
+        try:
+            data = User.RemoveUser(body_data['admin'], body_data['user'])
+        except KeyError:
+            return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
         try:
             if data['code']:
                 return JsonResponse(data, status=data['code'], safe=False)
         except (KeyError, TypeError) as error:
             print(error)
+    else:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
