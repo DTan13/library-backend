@@ -1,6 +1,6 @@
 django
 pymongo
-jwt
+pyjwt
 bcrypt
 dnspython
 gunicorn
