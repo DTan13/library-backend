@@ -23,6 +23,7 @@ backendDB = client['database']
 books = backendDB['books']
 users = backendDB['users']
 admins = backendDB['admins']
+feedbacks = backendDB['feedbacks']
 
 
 class Book(models.Model):
@@ -613,3 +614,18 @@ class Admin(models.Model):
                 return {'code': 500, 'error': 'Internal Server Error'}
         else:
             return {'code': 404, 'error': "Log In first"}
+
+
+class Feedback(models.Model):
+    """
+    This model is for feed back
+    """
+
+    @staticmethod
+    def getFeedback(feedback):
+        result = feedbacks.insert_one(feedback)
+
+        if result.acknowledged:
+            return {'code': "205", 'error': "Response saved"}
+        else:
+            return {'code': 500, 'error': "Internal Server Error"}
