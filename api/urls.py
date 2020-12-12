@@ -12,5 +12,6 @@ urlpatterns = [
     path("books/", views.books),
     path("book/", views.book),
     path("users/", views.users),
-    path("remove/", views.remove)
+    path("remove/", views.remove),
+    path('feedback/', views.feedback)
 ]

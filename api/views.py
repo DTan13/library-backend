@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from api.models import Book, Admin, User
+from api.models import Book, Admin, User, Feedback
 from api.utils import parseBody
 
 
@@ -153,3 +153,15 @@ def remove(request):
             print(error)
     else:
         return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
+
+@csrf_exempt
+def feedback(request):
+    body_data = parseBody(request)
+
+    if body_data == 0:
+        return JsonResponse({'code': 404, "error": "Not found"}, status=404, safe=False)
+
+    response = Feedback.getFeedback(body_data)
+
+    return JsonResponse(response, status=response['code'], safe=False)
