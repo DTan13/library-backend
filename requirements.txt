@@ -4,4 +4,3 @@ pyjwt
 bcrypt
 dnspython
 gunicorn
-django-heroku

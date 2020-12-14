@@ -10,15 +10,11 @@ from bson.objectid import ObjectId
 import urllib
 
 try:
-    mongoURI = "mongodb+srv://ADPRU_admin:" + \
-        urllib.parse.quote("ADPRU@2020") + \
-        "@library.i4v6d.mongodb.net/database?retryWrites=true&w=majority"
-    client = pymongo.MongoClient(mongoURI)
-    # client = pymongo.MongoClient("mongodb://127.0.0.1:27017/")
+    client = pymongo.MongoClient("mongodb://localhost:27017/")
 except errors.ConnectionFailure as ConnectionError:
     print(ConnectionError.message)
 
-backendDB = client['database']
+backendDB = client['te-project-backend-db']
 
 books = backendDB['books']
 users = backendDB['users']
